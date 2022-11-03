@@ -88,7 +88,7 @@ func (a *HandlerAPI) Read(key string, reply *Entry) error {
 	reply.Value = storeReply.Value
 	reply.Ref = storeReply.Ref
 
-	fmt.Printf("... Transaction: Read (Port: %s | Key: %s) - {%s, %s, %d} \n", os.Args[1], key, reply.Key, reply.Value, reply.Ref)
+	fmt.Printf("... Transaction: Read | Port: %s | {%s, %s, %d} \n", os.Args[1], reply.Key, reply.Value, reply.Ref)
 	return nil
 }
 
@@ -96,9 +96,10 @@ func (a *HandlerAPI) Read(key string, reply *Entry) error {
 func (a *HandlerAPI) Write(newEntry Entry, reply *Entry) error {
 
 	// Updates only the local cache with the new reference
-	hsrv.writeSet = append(hsrv.writeSet, WriteSetEntry{newEntry.Key, newEntry.Value, time.Now().UnixMicro()})
+	curr_time := time.Now().UnixMicro()
+	hsrv.writeSet = append(hsrv.writeSet, WriteSetEntry{newEntry.Key, newEntry.Value, curr_time})
 
-	fmt.Printf("... Transaction: Write (Port: %s | Key: %s)\n", os.Args[1], newEntry.Key)
+	fmt.Printf("... Transaction: Write | Port: %s | {%s, %s, %d} \n", os.Args[1], newEntry.Key, newEntry.Value, curr_time)
 	return nil
 }
 
@@ -113,7 +114,7 @@ func (a *HandlerAPI) Commit(empty string, reply *Entry) error {
 
 	// Call the validator process
 	hvalidator.validator.Call("ValidatorAPI.Validate", " ", &rwset)
-	fmt.Printf("... Transaction: Commit (Port: %s) \n", os.Args[1])
+	fmt.Printf("... Transaction: Commit | Port: %s \n", os.Args[1])
 
 	return nil
 }

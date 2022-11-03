@@ -26,6 +26,7 @@ type Entry struct {
 // Simulate one transaction (atomic action - set of reads and writes)
 func simulate(handler *rpc.Client, reads int, writes int, startIndex int, rangeIndex int) {
 	var ind int
+	var writeEntry Entry
 	var reply Entry
 
 	for reads > 0 || writes > 0 {
@@ -43,9 +44,10 @@ func simulate(handler *rpc.Client, reads int, writes int, startIndex int, rangeI
 			handler.Call("HandlerAPI.Read", strconv.Itoa(ind), &reply)
 			reads -= 1
 		} else {
-			ind = startIndex + rand.Intn(rangeIndex)
-			reply.Value = strconv.Itoa(rand.Intn(100))
-			handler.Call("HandlerAPI.Write", strconv.Itoa(ind), &reply)
+			writeEntry.Key = strconv.Itoa(startIndex + rand.Intn(rangeIndex))
+			writeEntry.Value = strconv.Itoa(20 + rand.Intn(100))
+			writeEntry.Ref = time.Now().UnixMicro()
+			handler.Call("HandlerAPI.Write", writeEntry, &reply)
 			writes -= 1
 		}
 		time.Sleep(1 * time.Second)
