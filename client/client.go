@@ -57,26 +57,33 @@ func simulate(handler *rpc.Client, reads int, writes int, startIndex int, rangeI
 
 func main() {
 	var reply Reply
-	fmt.Println("Getting Port for Handler...")
+	laptop := '\U0001F4BB'
+	pushpin := '\U0001F4CC'
+	hammer := '\U0001F528'
+	check := '\U00002705'
+	//email := '\U00002709'
+
+	fmt.Printf("\n%c Started a New Client\n", laptop)
+	fmt.Printf("\n%c Getting a new port for the handler\n", pushpin)
 	server, err := rpc.DialHTTP("tcp", "localhost:4040")
 	server.Call("API.GetHandlerPort", " ", &reply)
 	time.Sleep(2 * time.Second)
+	fmt.Printf("%c Starting a new transaction handler at Port %s\n", pushpin, reply.Port)
 
-	fmt.Println("Starting Handler at Port", reply.Port)
+	// Start up the new transaction handler process
 	cmd := exec.Command("go", "run", "handler.go", reply.Port)
 	err = cmd.Start()
-
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	fmt.Println("Connecting to Handler...")
+	// Connect to the newly created transaction handler process
+	fmt.Printf("%c Connecting to the transaction handler...\n", pushpin)
 	time.Sleep(2 * time.Second)
 	handler, err := rpc.DialHTTP("tcp", "localhost:"+reply.Port)
-
 	if err != nil {
-		log.Fatal("Connection error: ", err)
+		log.Fatal("Connection error to transaction handler: ", err)
 	}
 
 	reads, err := strconv.Atoi(os.Args[1])
@@ -87,7 +94,7 @@ func main() {
 
 	beg := time.Now().UnixMilli()
 	var cur int64
-	fmt.Println("Beginning Transactions...")
+	fmt.Printf("%c Beginning Transactions...\n\n", hammer)
 	for {
 		simulate(handler, reads, writes, startIndex, rangeIndex)
 		cur = time.Now().UnixMilli()
@@ -97,6 +104,6 @@ func main() {
 	}
 
 	handler.Call("HandlerAPI.Stop", " ", nil)
-	fmt.Println("Done")
+	fmt.Printf("\n%c All transactions complete. Shutting down the Client.\n", check)
 
 }
