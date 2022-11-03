@@ -60,6 +60,7 @@ func main() {
 	fmt.Println(" ------------------------------------------------------------------------------------")
 	fmt.Printf("\t\t\t%c Starting up the Transaction Server\n\n", rocket)
 
+	time.Sleep(3 * time.Second)
 	// Initiate the process with the key-value store at port 4042
 	// Send the number of entries in the store as arg
 	cmd_str := exec.Command("go", "run", "store.go", "4042", os.Args[1])
