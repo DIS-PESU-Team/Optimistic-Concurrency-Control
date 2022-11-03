@@ -55,6 +55,7 @@ func simulate(handler *rpc.Client, reads int, writes int, startIndex int, rangeI
 
 	// Commit the transaction's result to the global store
 	handler.Call("HandlerAPI.Commit", "", &reply)
+	handler.Call("HandlerAPI.ReadAll", &reply, &reply)
 	fmt.Printf("... Complete\n\n")
 	time.Sleep(1 * time.Second)
 }

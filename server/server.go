@@ -60,51 +60,50 @@ func main() {
 	fmt.Println(" ------------------------------------------------------------------------------------")
 	fmt.Printf("\t\t\t%c Starting up the Transaction Server\n\n", rocket)
 
-	// Initiate the validator process at port 4041
-	cmd := exec.Command("go", "run", "validator.go", "4041")
+	// Initiate the process with the key-value store at port 4042
+	// Send the number of entries in the store as arg
+	cmd_str := exec.Command("go", "run", "store.go", "4042", os.Args[1])
 
 	// Attach the standard out to read what the command might print
-	var stdBufferVal bytes.Buffer
-	mw := io.MultiWriter(os.Stdout, &stdBufferVal)
-	cmd.Stdout = mw
-	cmd.Stderr = mw
+	var stdBufferStr bytes.Buffer
+	mw_str := io.MultiWriter(os.Stdout, &stdBufferStr)
+	cmd_str.Stdout = mw_str
+	cmd_str.Stderr = mw_str
 
-	err := cmd.Start()
+	err := cmd_str.Start()
 	time.Sleep(1 * time.Second)
-	fmt.Printf(" %c Started Validator on Port: 4041\n", construction)
-
+	fmt.Printf(" %c Started Store on Port: 4042\n", construction)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	// Initiate the process with the key-value store at port 4042
-	// Send the number of entries in the store as arg
-	cmd = exec.Command("go", "run", "store.go", "4042", os.Args[1])
+	// Initiate the validator process at port 4041
+	cmd_val := exec.Command("go", "run", "validator.go", "4041")
 
 	// Attach the standard out to read what the command might print
-	var stdBufferStr bytes.Buffer
-	mw_str := io.MultiWriter(os.Stdout, &stdBufferStr)
-	cmd.Stdout = mw_str
-	cmd.Stderr = mw_str
+	var stdBufferVal bytes.Buffer
+	mw := io.MultiWriter(os.Stdout, &stdBufferVal)
+	cmd_val.Stdout = mw
+	cmd_val.Stderr = mw
 
-	err = cmd.Start()
+	err = cmd_val.Start()
 	time.Sleep(1 * time.Second)
-	fmt.Printf(" %c Started Store on Port: 4042\n", construction)
-
+	fmt.Printf(" %c Started Validator on Port: 4041\n", construction)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
 	// Connect to the validator and store servers
-	validator, err := rpc.DialHTTP("tcp", "localhost:4041")
-	if err != nil {
-		log.Fatal("Connection error to validator: ", err)
-	}
 	store, err := rpc.DialHTTP("tcp", "localhost:4042")
 	if err != nil {
 		log.Fatal("Connection error to store: ", err)
+	}
+
+	validator, err := rpc.DialHTTP("tcp", "localhost:4041")
+	if err != nil {
+		log.Fatal("Connection error to validator: ", err)
 	}
 
 	// Stop the validator and store processes in case of an exit
@@ -129,7 +128,7 @@ func main() {
 	// Initiate a listener
 	listener, err := net.Listen("tcp", ":4040")
 	if err != nil {
-		log.Fatal("Listener error", err)
+		log.Fatal("Listener error at server", err)
 	}
 
 	fmt.Printf(" %c Started Server on Port: 4040\n\n", construction)

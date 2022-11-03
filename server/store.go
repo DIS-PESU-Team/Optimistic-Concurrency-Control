@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -27,6 +28,17 @@ type Store struct {
 	len      int
 }
 
+type ReadSetEntry struct {
+	ReadTrx  Entry
+	ReadTime int64
+}
+
+type WriteSetEntry struct {
+	Key       string
+	NewValue  string
+	WriteTime int64
+}
+
 // Global store containing list of entries
 var ssrv Store
 
@@ -44,6 +56,25 @@ func (a *StoreAPI) Read(Key string, reply *Entry) error {
 			break
 		}
 	}
+	return nil
+}
+
+func (a *StoreAPI) Write(write_entry *WriteSetEntry, reply *Entry) error {
+	for i, entry := range ssrv.data {
+		if entry.Key == write_entry.Key {
+			ssrv.data[i].Value = write_entry.NewValue
+			ssrv.data[i].Ref = write_entry.WriteTime
+		}
+	}
+	return nil
+}
+
+func (a *StoreAPI) ReadAll(empty *Entry, reply *Entry) error {
+	fmt.Println()
+	for _, entry := range ssrv.data {
+		fmt.Println(entry.Key, entry.Value, entry.Ref)
+	}
+	fmt.Println()
 	return nil
 }
 
@@ -81,10 +112,6 @@ func main() {
 		temp = Entry{Key: strconv.Itoa(i), Value: "0", Ref: time.Now().UnixNano()}
 		ssrv.data = append(ssrv.data, temp)
 	}
-
-	// for _, entry := range ssrv.data {
-	// 	fmt.Println(entry.Key, entry.Value, entry.Ref)
-	// }
 
 	http.Serve(ssrv.listener, nil)
 	if err != nil {
