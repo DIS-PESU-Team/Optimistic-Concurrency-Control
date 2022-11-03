@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -53,16 +55,23 @@ func main() {
 
 	var reply Reply
 
-	fmt.Printf("\t\t\t%c  Distributed Systems Project %c\n", monitor, monitor)
+	fmt.Printf("\n\t\t\t%c  Distributed Systems Project %c\n", monitor, monitor)
 	fmt.Println("\tOptimistic Concurrency Control - Distributed Transaction Server")
-	fmt.Println("-------------------------------------------------------------------------------------")
+	fmt.Println(" ------------------------------------------------------------------------------------")
 	fmt.Printf("\t\t\t%c Starting up the Transaction Server\n\n", rocket)
 
 	// Initiate the validator process at port 4041
 	cmd := exec.Command("go", "run", "validator.go", "4041")
+
+	// Attach the standard out to read what the command might print
+	var stdBufferVal bytes.Buffer
+	mw := io.MultiWriter(os.Stdout, &stdBufferVal)
+	cmd.Stdout = mw
+	cmd.Stderr = mw
+
 	err := cmd.Start()
 	time.Sleep(1 * time.Second)
-	fmt.Printf("%c Started Validator on Port: 4041\n", construction)
+	fmt.Printf(" %c Started Validator on Port: 4041\n", construction)
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -72,9 +81,16 @@ func main() {
 	// Initiate the process with the key-value store at port 4042
 	// Send the number of entries in the store as arg
 	cmd = exec.Command("go", "run", "store.go", "4042", os.Args[1])
+
+	// Attach the standard out to read what the command might print
+	var stdBufferStr bytes.Buffer
+	mw_str := io.MultiWriter(os.Stdout, &stdBufferStr)
+	cmd.Stdout = mw_str
+	cmd.Stderr = mw_str
+
 	err = cmd.Start()
 	time.Sleep(1 * time.Second)
-	fmt.Printf("%c Started Store on Port: 4042\n", construction)
+	fmt.Printf(" %c Started Store on Port: 4042\n", construction)
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -116,7 +132,7 @@ func main() {
 		log.Fatal("Listener error", err)
 	}
 
-	fmt.Printf("%c Started Server on Port: 4040\n\n", construction)
+	fmt.Printf(" %c Started Server on Port: 4040\n\n", construction)
 
 	http.Serve(listener, nil)
 	if err != nil {

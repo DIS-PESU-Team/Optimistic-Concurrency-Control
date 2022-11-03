@@ -56,7 +56,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Listener error", err)
 	}
-	fmt.Printf("serving rpc on port %s", os.Args[1])
+	// fmt.Printf("serving rpc on port %s", os.Args[1])
 	vsrv = Validator{listener: listener}
 	http.Serve(vsrv.listener, nil)
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -81,7 +80,7 @@ func main() {
 		log.Fatal("Listener error: ", err)
 	}
 
-	fmt.Printf("Serving RPC on port %s", os.Args[1])
+	// fmt.Printf("Serving RPC on port %s", os.Args[1])
 	ssrv = Store{listener: listener}
 	http.Serve(ssrv.listener, nil)
 
