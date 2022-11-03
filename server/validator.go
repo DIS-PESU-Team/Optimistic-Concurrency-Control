@@ -17,23 +17,23 @@ type Validator struct {
 }
 
 type Entry struct {
-	key   string
-	value string
-	ref   int64
+	Key   string
+	Value string
+	Ref   int64
 }
 
 type RWSets struct {
-	readSet  []Entry
-	writeSet []Entry
-	commit   bool
+	ReadSet  []Entry
+	WriteSet []Entry
+	Commit   bool
 }
 
 type ValidatorAPI int
 
 var vsrv Validator
 
-func (a *ValidatorAPI) Validate(empty string, reply *Entry) error {
-
+func (a *ValidatorAPI) Validate(empty string, reply *RWSets) error {
+	fmt.Println("Validate")
 	return nil
 }
 
