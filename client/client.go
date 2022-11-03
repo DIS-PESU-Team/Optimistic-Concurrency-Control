@@ -79,6 +79,7 @@ func main() {
 
 	fmt.Printf("\n\t%c Runtime: %d | # Reads/Txn: %d | # Writes/Txn: %d \n", placard, clientRunTime*int(time.Microsecond), reads, writes)
 
+	time.Sleep(5 * time.Second)
 	fmt.Printf("\n %c Getting a new port for a new transaction handler...\n", pushpin)
 	server, err := rpc.DialHTTP("tcp", "localhost:4040")
 	server.Call("API.GetHandlerPort", " ", &reply)
