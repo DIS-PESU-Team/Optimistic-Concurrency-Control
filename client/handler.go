@@ -31,16 +31,15 @@ type Validator struct {
 }
 
 type RWSets struct {
-	readSet  []Entry
-	writeSet []Entry
-	commit   bool
+	ReadSet  []Entry
+	WriteSet []Entry
+	Commit   bool
 }
 
 type HandlerAPI int
 
 var hsrv Handler
 var hvalidator Validator
-var rwset RWSets
 
 func (a *HandlerAPI) Read(key string, reply *Entry) error {
 	var storeReply Entry
@@ -55,22 +54,26 @@ func (a *HandlerAPI) Read(key string, reply *Entry) error {
 	hsrv.readSet = append(hsrv.readSet, Entry{storeReply.Key, storeReply.Value, storeReply.Ref})
 	reply.Key = storeReply.Key
 	reply.Value = storeReply.Value
+	fmt.Println("Read")
 	return nil
 }
 
 func (a *HandlerAPI) Write(key string, reply *Entry) error {
 	hsrv.writeSet = append(hsrv.writeSet, Entry{key, reply.Value, time.Now().UnixMicro()})
+	fmt.Println("Write")
 	return nil
 }
 
 func (a *HandlerAPI) Commit(empty string, reply *Entry) error {
+	var rwset RWSets
 	hvalidator.mu.Lock()
 	defer hvalidator.mu.Unlock()
 
-	rwset.readSet = hsrv.readSet
-	rwset.writeSet = hsrv.writeSet
+	rwset.ReadSet = hsrv.readSet
+	rwset.WriteSet = hsrv.writeSet
 
 	hvalidator.validator.Call("ValidatorAPI.Validate", " ", &rwset)
+	fmt.Println("Commit")
 
 	return nil
 }

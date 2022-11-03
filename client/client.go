@@ -26,7 +26,7 @@ func simulate(handler *rpc.Client, reads int, writes int, startIndex int, rangeI
 	var ind int
 	var reply Entry
 
-	for reads > 0 && writes > 0 {
+	for reads > 0 || writes > 0 {
 		rw := rand.Float64()
 		if reads == 0 {
 			rw = 0
@@ -50,9 +50,9 @@ func simulate(handler *rpc.Client, reads int, writes int, startIndex int, rangeI
 		time.Sleep(1000 * time.Microsecond)
 	}
 
+	handler.Call("HandlerAPI.Commit", "", &reply)
 	fmt.Println("Txn Done")
-	handler.Call("HandlerAPI.Commit", "", reply)
-	time.Sleep(1 * time.Second)
+	time.Sleep(1000 * time.Microsecond)
 }
 
 func main() {
