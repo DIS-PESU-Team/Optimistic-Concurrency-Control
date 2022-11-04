@@ -28,6 +28,11 @@ type ReadSetEntry struct {
 	ReadTime int64
 }
 
+type Txnstats struct {
+	TotalTxns float32
+	SuccTxns  float32
+}
+
 type WriteSetEntry struct {
 	Key       string
 	NewValue  string
@@ -35,8 +40,10 @@ type WriteSetEntry struct {
 }
 
 type Handler struct {
-	Listener net.Listener
-	Store    *rpc.Client
+	Listener  net.Listener
+	Store     *rpc.Client
+	TotalTxns float32
+	SuccTxns  float32
 
 	// To record read ops, one entry: {Key, Value, PrevTimestamp}
 	ReadSet []ReadSetEntry
@@ -122,7 +129,18 @@ func (a *HandlerAPI) Commit(empty string, reply *Entry) error {
 
 	// Call the validator process
 	hvalidator.Validator.Call("ValidatorAPI.Validate", &rwset, &valReply)
-	fmt.Printf("... Transaction: Commit | Port: %s \n", os.Args[1])
+
+	hsrv.TotalTxns += 1
+
+	if valReply.Key == "Success" {
+		hsrv.SuccTxns += 1
+	}
+
+	fmt.Printf("... Transaction: Commit | Port: %s | Curr Stats: %f, %f \n", os.Args[1], hsrv.SuccTxns, hsrv.TotalTxns)
+
+	//Empty the read and write sets
+	hsrv.ReadSet = []ReadSetEntry{}
+	hsrv.WriteSet = []WriteSetEntry{}
 
 	return nil
 }
@@ -132,10 +150,17 @@ func (a *HandlerAPI) ReadAll(empty *Entry, reply *Entry) error {
 	return nil
 }
 
+func (a *HandlerAPI) GetStats(empty string, reply *Txnstats) error {
+	reply.TotalTxns = hsrv.TotalTxns
+	reply.SuccTxns = hsrv.SuccTxns
+	fmt.Printf("... Transaction handler statistics (Port: %s) | %f, %f \n\n", os.Args[1], reply.TotalTxns, reply.SuccTxns)
+
+	return nil
+}
+
 func (a *HandlerAPI) Stop(empty string, reply *Entry) error {
 	hsrv.Listener.Close()
-	time.Sleep(1 * time.Second)
-	fmt.Printf("... Transaction handler stopped (Port: %s)\n\n", os.Args[1])
+	time.Sleep(2 * time.Second)
 	return nil
 }
 
@@ -172,7 +197,7 @@ func main() {
 
 	// Instantiate the transaction handler with the
 	// connections to the listener and store
-	hsrv = Handler{Listener: listener, Store: store}
+	hsrv = Handler{Listener: listener, Store: store, TotalTxns: 0, SuccTxns: 0}
 	hvalidator = Validator{Validator: validator}
 	http.Serve(hsrv.Listener, nil)
 	if err != nil {

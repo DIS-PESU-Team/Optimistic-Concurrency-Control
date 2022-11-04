@@ -11,10 +11,10 @@ import (
 )
 
 type Validator struct {
-	listener       net.Listener
-	store          *rpc.Client
-	numTxns        int
-	successfulTxns int
+	Listener       net.Listener
+	Store          *rpc.Client
+	NumTxns        float32
+	SuccessfulTxns float32
 }
 
 type Entry struct {
@@ -53,10 +53,12 @@ func (a *ValidatorAPI) Validate(rwset *RWSets, reply *Entry) error {
 
 	fmt.Println("\n\tTransaction for Client at Port: ", rwset.ClientRef)
 	rwset.Commit = true
+	vsrv.NumTxns += 1
 	// Check if all read ops are still valid
 	for _, read_entry := range rwset.ReadSet {
-		vsrv.store.Call("StoreAPI.Read", read_entry.ReadTrx.Key, &storeReply)
+		vsrv.Store.Call("StoreAPI.Read", read_entry.ReadTrx.Key, &storeReply)
 		if storeReply.Ref != read_entry.ReadTrx.Ref {
+			reply.Key = "Abort"
 			fmt.Println("ABORT. Transaction commit failed due to differing reads.")
 			fmt.Println(storeReply.Ref, read_entry.ReadTrx.Ref)
 			rwset.Commit = false
@@ -66,18 +68,22 @@ func (a *ValidatorAPI) Validate(rwset *RWSets, reply *Entry) error {
 
 	// If all read ops are valid, update all pending writes
 	if rwset.Commit == true {
+		vsrv.SuccessfulTxns += 1
+		reply.Key = "Success"
 		fmt.Println("\t...All read operations are valid!")
 		for _, write_entry := range rwset.WriteSet {
-			vsrv.store.Call("StoreAPI.Write", &write_entry, &storeReply)
+			vsrv.Store.Call("StoreAPI.Write", &write_entry, &storeReply)
 			fmt.Println("\t...Updated entry with key: ", write_entry.Key)
 		}
 	}
 
+	sr := vsrv.SuccessfulTxns / vsrv.NumTxns
+	fmt.Println("Success Ratio: ", sr*100, "%")
 	return nil
 }
 
 func (a *ValidatorAPI) Stop(empty string, reply *Entry) error {
-	vsrv.listener.Close()
+	vsrv.Listener.Close()
 	time.Sleep(time.Second * 1)
 	return nil
 }
@@ -105,8 +111,8 @@ func main() {
 	}
 
 	// fmt.Printf("serving rpc on port %s", os.Args[1])
-	vsrv = Validator{listener: listener, store: store}
-	http.Serve(vsrv.listener, nil)
+	vsrv = Validator{Listener: listener, Store: store, NumTxns: 0, SuccessfulTxns: 0}
+	http.Serve(vsrv.Listener, nil)
 
 	if err != nil {
 		log.Fatal("Error serving at Validator:", err)

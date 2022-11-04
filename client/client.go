@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+type Txnstats struct {
+	TotalTxns float32
+	SuccTxns  float32
+}
+
 type Reply struct {
 	Port  string
 	value string
@@ -50,13 +55,15 @@ func simulate(handler *rpc.Client, reads int, writes int, startIndex int, rangeI
 			handler.Call("HandlerAPI.Write", writeEntry, &reply)
 			writes -= 1
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(100000 * time.Microsecond)
+		// time.Sleep(1 * time.Second)
 	}
 
 	// Commit the transaction's result to the global store
 	handler.Call("HandlerAPI.Commit", "", &reply)
 	handler.Call("HandlerAPI.ReadAll", &reply, &reply)
 	fmt.Printf("... Complete\n\n")
+	// time.Sleep(10000 * time.Microsecond)
 	time.Sleep(1 * time.Second)
 }
 
@@ -124,7 +131,14 @@ func main() {
 		}
 	}
 
-	handler.Call("HandlerAPI.Stop", " ", nil)
+	var stats Txnstats
+	var stopReply Entry
+	handler.Call("HandlerAPI.GetStats", "", &stats)
+	handler.Call("HandlerAPI.Stop", "", &stopReply)
 	fmt.Printf("\n %c All transactions complete.\n %c Shutting down the client on port %s.\n", check, check, reply.Port)
+	fmt.Println("Transaction stats:")
+	fmt.Println("\tTotal transactions:", stats.TotalTxns)
+	fmt.Println("\tSuccessful transactions:", stats.SuccTxns)
+	fmt.Println("\tSuccess Percentage: ", 100*stats.SuccTxns/stats.TotalTxns, "%")
 
 }
